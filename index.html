@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Зоряний шлях — трекер дисципліни у форматі гри: завдання, челенджі та винагороди за зірочки.">
+<title>Зоряний шлях</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23E59B00' d='M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+html,body{height:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+
+/* Layout: sticky score bar + tab strip; each tab is a single-column board of cards that becomes a grid on wide screens */
+:root{
+  --bg:#F2F4FA; --surface:#FFFFFF; --surface-2:#E8ECF6; --fg:#151A2D; --muted:#5A6283; --line:#D6DCEA;
+  --ink:#2E3ECF; --ink-soft:#E3E6FB; --star:#E59B00; --star-ink:#7A5200; --star-soft:#FFF1CC;
+  --good:#1B8A57; --good-soft:#DDF3E8; --bad:#C23F38;
+  --s0:#2E3ECF; --s1:#D1495B; --s2:#1B8A57; --s3:#B5651D; --s4:#7B3FC4; --s5:#0F7F95; --s6:#C2408F; --s7:#5A6B1A;
+  --f-display:"Unbounded", "Manrope", system-ui, sans-serif;
+  --f-body:"Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:14px; --shadow:0 1px 2px rgba(20,26,60,.06), 0 6px 20px rgba(20,26,60,.06);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0D1020; --surface:#161A2D; --surface-2:#1F2540; --fg:#E7EAF7; --muted:#99A1C3; --line:#2B3252;
+  --ink:#8F9BFF; --ink-soft:#252C55; --star:#FFC23D; --star-ink:#FFD877; --star-soft:#3A2F12;
+  --good:#4CC98A; --good-soft:#143326; --bad:#F27B72;
+  --s0:#8F9BFF; --s1:#F07D8C; --s2:#4CC98A; --s3:#E9A35E; --s4:#B88CF5; --s5:#4CC3D9; --s6:#EE80C0; --s7:#B3C55A;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0D1020; --surface:#161A2D; --surface-2:#1F2540; --fg:#E7EAF7; --muted:#99A1C3; --line:#2B3252;
+  --ink:#8F9BFF; --ink-soft:#252C55; --star:#FFC23D; --star-ink:#FFD877; --star-soft:#3A2F12;
+  --good:#4CC98A; --good-soft:#143326; --bad:#F27B72;
+  --s0:#8F9BFF; --s1:#F07D8C; --s2:#4CC98A; --s3:#E9A35E; --s4:#B88CF5; --s5:#4CC3D9; --s6:#EE80C0; --s7:#B3C55A;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1180px;margin:0 auto;padding:12px 16px 0;display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;margin-right:auto}
+.brand svg{width:22px;height:22px;fill:var(--star)}
+.wallet{display:flex;align-items:center;gap:8px;background:var(--star-soft);color:var(--star-ink);border-radius:999px;padding:6px 14px 6px 10px}
+.wallet svg{width:18px;height:18px;fill:var(--star)}
+.wallet b{font-family:var(--f-num);font-size:1.15rem}
+.wallet span{font-size:.8rem}
+.level{display:flex;align-items:center;gap:10px;min-width:180px}
+.level small{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.level strong{font-size:.9rem}
+.lvbar{height:6px;width:110px;border-radius:9px;background:var(--surface-2);overflow:hidden}
+.lvbar i{display:block;height:100%;background:var(--ink);border-radius:9px}
+.save{font-size:.75rem;color:var(--muted);min-width:80px;text-align:right}
+.tabs{max-width:1180px;margin:0 auto;padding:8px 16px 0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:10px 14px;border-bottom:2px solid transparent;color:var(--muted);font-weight:600;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--fg);border-color:var(--ink)}
+
+main{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:22px 60px}
+main.busy{opacity:.55;pointer-events:none}
+h2{font-family:var(--f-display);font-weight:500;font-size:1.35rem;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h3{font-size:1rem;margin:0;font-weight:700}
+.sub{color:var(--muted);font-size:.9rem;margin:2px 0 0}
+.stack{display:flex;flex-direction:column;gap:18px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);min-width:0}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.note{background:var(--ink-soft);color:var(--fg);border-radius:12px;padding:10px 14px;font-size:.9rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.note button{margin-left:auto}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 13px;font-weight:600;font-size:.88rem}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.btn.star{background:var(--star);border-color:var(--star);color:#2A1C00}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+.btn.ghost:hover{color:var(--fg)}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.icon-btn{border:0;background:none;color:var(--muted);width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:1.1rem;flex:none}
+.icon-btn:hover{background:var(--surface-2);color:var(--fg)}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+textarea{width:100%;min-height:180px;font-family:var(--f-num);font-size:.85rem;resize:vertical}
+input[type=number]{width:70px;font-family:var(--f-num)}
+.addf{display:flex;gap:6px;margin-top:10px}
+.addf input[type=text]{flex:1}
+
+/* weeks */
+.weekbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.weekbar h2{min-width:200px}
+.kpis{display:flex;flex-wrap:wrap;gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:.85rem;color:var(--muted)}
+.kpi b{color:var(--fg);font-family:var(--f-num)}
+.sph{border-top:4px solid var(--c)}
+.sph header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sph header h3{flex:1;min-width:0;overflow-wrap:anywhere}
+.cnt{font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
+.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.task{display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:8px}
+.task:hover{background:var(--surface-2)}
+.task .t{flex:1;min-width:0;overflow-wrap:anywhere}
+.task.done .t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);background:var(--surface);flex:none;display:grid;place-items:center;padding:0}
+.chk svg{width:14px;height:14px;fill:none;stroke:var(--surface);stroke-width:3;opacity:0}
+.done .chk,.chk.on{background:var(--c,var(--ink));border-color:var(--c,var(--ink))}
+.done .chk svg,.chk.on svg{opacity:1}
+.chip{border:0;font-family:var(--f-num);font-size:.75rem;font-weight:700;background:var(--star-soft);color:var(--star-ink);border-radius:999px;padding:2px 8px;flex:none}
+.chip.zero{background:var(--surface-2);color:var(--muted)}
+.when{font-size:.72rem;color:var(--ink);background:var(--ink-soft);border-radius:6px;padding:1px 6px;flex:none}
+.sph-close{margin-top:12px;width:100%;border:1px dashed var(--line);background:none;border-radius:10px;padding:9px;font-weight:600;color:var(--muted)}
+.sph-close:hover{border-color:var(--c);color:var(--fg)}
+.sph-close.on{border-style:solid;border-color:var(--good);background:var(--good-soft);color:var(--good)}
+.mini-prog{height:4px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin:-2px 0 8px}
+.mini-prog i{display:block;height:100%;background:var(--c)}
+
+/* challenges */
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:5px;margin-top:12px}
+.day{aspect-ratio:1;max-width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;font-family:var(--f-num);font-size:.72rem;color:var(--muted);padding:0}
+.day.on{background:var(--star);border-color:var(--star);color:#2A1C00;font-weight:700}
+.day.today{outline:2px solid var(--ink);outline-offset:1px}
+.day:disabled{opacity:.35;cursor:default}
+.bar{height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--star);border-radius:8px}
+
+/* rewards */
+.reward{display:flex;flex-direction:column;gap:10px}
+.reward .top-r{display:flex;align-items:flex-start;gap:10px}
+.reward h3{flex:1;min-width:0;overflow-wrap:anywhere}
+.price{font-family:var(--f-num);font-weight:700;color:var(--star-ink);background:var(--star-soft);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:.72rem;font-weight:700;border-radius:6px;padding:2px 7px;background:var(--surface-2);color:var(--muted)}
+.tag.High{color:var(--bad)} .tag.Low{color:var(--good)} .tag.Medium{color:var(--star-ink)}
+.reward .bar i{background:var(--ink)}
+.reward.ready .bar i{background:var(--good)}
+.hist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.hist li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.hist li:last-child{border-bottom:0}
+.hist .t{flex:1;min-width:0}
+.date{font-family:var(--f-num);font-size:.78rem;color:var(--muted)}
+.plus{font-family:var(--f-num);font-weight:700;color:var(--good)}
+.minus{font-family:var(--f-num);font-weight:700;color:var(--bad)}
+
+/* stats */
+.chart-wrap{overflow-x:auto}
+.chart-wrap svg{display:block;width:100%;min-width:420px;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.82rem;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.hbars{display:flex;flex-direction:column;gap:9px}
+.hb{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;font-size:.88rem}
+.hb .bar{grid-column:1/-1}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+td.num{font-family:var(--f-num)}
+tfoot td{font-weight:700}
+
+/* settings */
+.srow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
+.srow input[type=text]{flex:1;min-width:140px}
+.sw{display:flex;gap:4px}
+.sw button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;padding:0}
+.sw button.on{border-color:var(--fg)}
+.empty{color:var(--muted);font-size:.9rem;padding:8px 0}
+
+.burst{position:fixed;z-index:99;pointer-events:none;font-family:var(--f-num);font-weight:700;color:var(--star-ink);background:var(--star-soft);border-radius:999px;padding:2px 9px;animation:up 1s ease-out forwards}
+@keyframes up{to{transform:translateY(-46px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.burst{animation:none;opacity:0}}
+@media (max-width:640px){
+  .level{min-width:0}.lvbar{width:70px}.save{display:none}
+  h2{font-size:1.15rem}
+}
+
+/* account & gate */
+#gate{min-height:100%;display:grid;place-items:center;padding-inline:16px;padding-block:48px}
+.gate-card{width:min(430px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px 24px;box-shadow:var(--shadow)}
+.gate-brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:1.25rem;letter-spacing:-.01em}
+.gate-brand svg{width:28px;height:28px;fill:var(--star)}
+.auth-tabs{display:flex;background:var(--surface-2);border-radius:12px;padding:4px;gap:4px}
+.auth-tabs button{flex:1;border:0;background:none;padding:9px;border-radius:9px;font-weight:600;color:var(--muted)}
+.auth-tabs button.on{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field input{width:100%;padding:11px 12px;font-size:16px}
+.pw{position:relative;display:block}
+.pw input{padding-right:84px}
+.pw .link{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.82rem}
+.err{color:var(--bad);font-size:.9rem;margin:0}
+.err:empty,.ok:empty{display:none}
+.ok{color:var(--good);font-size:.9rem;margin:0}
+.btn.big{padding:12px;font-size:1rem}
+.link{border:0;background:none;color:var(--ink);padding:0;font-weight:600;text-decoration:underline;text-underline-offset:3px;align-self:flex-start;font-size:.9rem}
+.choice{display:flex;flex-direction:column;gap:8px}
+.choice button,.choice label{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;cursor:pointer}
+.choice button:hover,.choice label:hover{border-color:var(--ink)}
+.choice span{color:var(--muted);font-size:.85rem}
+.acct{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px 3px 3px;display:flex;gap:8px;align-items:center;max-width:230px;min-width:0}
+.av{width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-weight:700;font-size:.85rem;flex:none}
+.big-av{width:40px;height:40px;font-size:1.05rem}
+.acct span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.85rem}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:100;max-width:calc(100% - 32px);font-size:.9rem;box-shadow:var(--shadow)}
+label.btn{display:inline-flex;align-items:center;cursor:pointer}
+@media (max-width:640px){.acct{padding-right:3px}.acct span:last-child{display:none}}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div id="gate"><div class="gate-card"><p>Завантаження…</p></div></div>
+<div id="app" hidden>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z"/></svg>Зоряний шлях</div>
+    <div class="level" id="level"></div>
+    <div class="wallet" title="Зірочки на рахунку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z"/></svg><b id="balance">0</b><span>на рахунку</span></div>
+    <div class="save" id="save"></div>
+    <button class="acct" id="acct" data-a="acct" hidden><span class="av"></span><span></span></button>
+  </div>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" data-tab="week" role="tab">Тиждень</button>
+    <button class="tab" data-tab="today" role="tab">Сьогодні</button>
+    <button class="tab" data-tab="challenges" role="tab">Челенджі</button>
+    <button class="tab" data-tab="rewards" role="tab">Винагороди</button>
+    <button class="tab" data-tab="stats" role="tab">Статистика</button>
+    <button class="tab" data-tab="settings" role="tab">Налаштування</button>
+  </nav>
+</header>
+<main id="view" class="busy"></main>
+</div>
+<script type="module">
+
+/* ---------- helpers ---------- */
+const STAR = '★';
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const z = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate());
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+const weekOf = s => { const d = parse(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return iso(d); };
+const today = () => iso(new Date());
+const MON = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+const MON_G = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const MON_N = ['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
+const DOW = ['неділя','понеділок','вівторок','середа','четвер','пʼятниця','субота'];
+const fmtShort = s => { const d = parse(s); return d.getDate() + ' ' + MON[d.getMonth()]; };
+const fmtRange = w => fmtShort(w) + ' – ' + fmtShort(addDays(w, 6));
+const monthKey = s => s.slice(0, 7);
+const monthName = k => { const [y, m] = k.split('-').map(Number); return MON[m - 1] + ' ' + String(y).slice(2); };
+const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+const PRI = { High: 'Високий', Medium: 'Середній', Low: 'Низький' };
+const EFF = { Large: 'Великі зусилля', Medium: 'Середні зусилля', Small: 'Малі зусилля' };
+
+/* ---------- starting states ---------- */
+function emptyState() {
+  return { v: 1, isDefault: false, settings: { sphereBonus: 2 }, spheres: [], tasks: [], sphereDone: {}, challenges: [], rewards: [], extras: [], purchases: [] };
+}
+function exampleState() {
+  const w = weekOf(today());
+  const sp = (name, c) => ({ id: uid(), name, c });
+  const spheres = [sp('Навчання', 0), sp('Спорт', 2), sp('Читання', 3), sp('Рутина', 6), sp('Проєкти', 4)];
+  const plan = [
+    ['2 години на онлайн-курс', 'Повторити конспект'],
+    ['3 тренування', '10 000 кроків двічі'],
+    ['10 сторінок щодня'],
+    ['Склянка води зранку', 'Лягти до 23:30 пʼять разів'],
+    ['Одна задача з беклогу']
+  ];
+  const tasks = [];
+  plan.forEach((list, i) => list.forEach(text => tasks.push({ id: uid(), week: w, sphere: spheres[i].id, text, stars: 1, day: null, done: false, doneAt: null })));
+  const rw = (name, cost, pri, eff) => ({ id: uid(), name, cost, pri: pri || '', eff: eff || '' });
+  return Object.assign(emptyState(), {
+    isDefault: true, spheres, tasks,
+    challenges: [{ id: uid(), name: 'Без соцмереж до обіду', start: today(), days: 30, stars: 1, checks: {} }],
+    rewards: [
+      rw('Кава в кавʼярні', 10, 'Low'), rw('Чіпси', 15), rw('Улюблена їжа', 25, 'Medium'),
+      rw('Вечір без справ', 25, 'High', 'Small'), rw('Кіно', 40), rw('Нова книга', 60),
+      rw('Поїздка на вихідні', 200, 'High', 'Large')
+    ]
+  });
+}
+
+/* ---------- storage ----------
+   Без config.js сайт працює локально (localStorage).
+   З config.js — акаунти Firebase: users/{uid} (усе, крім завдань) + users/{uid}/weeks/{понеділок} (завдання тижня). */
+const LKEY = 'zoryanyi-shlyakh-v1';
+const FB_VER = '10.12.2';
+const CFG = window.FIREBASE_CONFIG || {};
+const CLOUD = !!(CFG.apiKey && CFG.projectId && !String(CFG.apiKey).includes('ВСТАВ'));
+const DEVICE = uid() + uid();
+let state = emptyState();
+let loaded = false;
+let fb = null, account = null, unwatch = null;
+let lastSaved = null, rev = 0, pending = 0;
+let ui = { tab: 'week', week: weekOf(today()), importOpen: false, armed: {}, gate: 'loading', authMode: 'login', authMsg: '', authErr: '', pendingImport: null };
+try { const t = localStorage.getItem(LKEY + ':tab'); if (t) ui.tab = t; } catch (e) {}
+
+function setSave(t) { const el = document.getElementById('save'); if (el) el.textContent = t; }
+function migrate(s) {
+  const d = emptyState();
+  for (const k of Object.keys(d)) if (s[k] === undefined) s[k] = d[k];
+  s.settings = Object.assign({ sphereBonus: 2 }, s.settings);
+  return s;
+}
+function readLocal() {
+  try { const l = localStorage.getItem(LKEY); if (l) { const s = migrate(JSON.parse(l)); if (Array.isArray(s.spheres)) return s; } } catch (e) {}
+  return null;
+}
+function toast(text) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = text;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3800);
+}
+
+/* split state for Firestore: one doc for everything except tasks, one doc per week of tasks */
+function splitState(s) {
+  const { tasks, ...rest } = s;
+  const out = { main: JSON.stringify(rest), weeks: {} }, by = {};
+  for (const t of tasks) (by[t.week] = by[t.week] || []).push(t);
+  for (const [w, list] of Object.entries(by)) out.weeks[w] = JSON.stringify(list);
+  return out;
+}
+
+async function loadFirebase() {
+  const base = 'https://www.gstatic.com/firebasejs/' + FB_VER + '/';
+  const [app, auth, fs] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+  const a = app.initializeApp(CFG);
+  const au = auth.getAuth(a);
+  au.languageCode = 'uk';
+  let db;
+  try { db = fs.initializeFirestore(a, { localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }) }); }
+  catch (e) { db = fs.getFirestore(a); }
+  if (window.ZS_EMULATOR) { auth.connectAuthEmulator(au, 'http://127.0.0.1:9099', { disableWarnings: true }); fs.connectFirestoreEmulator(db, '127.0.0.1', 8085); }
+  fb = { auth, fs, au, db };
+}
+const mainRef = () => fb.fs.doc(fb.db, 'users', account.uid);
+const weeksCol = () => fb.fs.collection(fb.db, 'users', account.uid, 'weeks');
+
+async function fetchRemote(data) {
+  const snap = await fb.fs.getDocs(weeksCol());
+  const s = JSON.parse(data.main);
+  s.tasks = [];
+  snap.docs.forEach(d => { try { s.tasks.push(...JSON.parse(d.data().tasks)); } catch (e) {} });
+  state = migrate(s);
+  lastSaved = splitState(state);
+  rev = data.rev || 0;
+}
+
+async function openAccount() {
+  showGate('loading');
+  const snap = await fb.fs.getDoc(mainRef());
+  if (!snap.exists()) { showGate('onboard'); return; }
+  await fetchRemote(snap.data());
+  startApp();
+}
+function startApp() {
+  loaded = true;
+  watchRemote();
+  showApp();
+  setSave(pending ? 'Зберігаю…' : 'Збережено');
+}
+function watchRemote() {
+  if (unwatch) unwatch();
+  unwatch = fb.fs.onSnapshot(mainRef(), async snap => {
+    if (!snap.exists()) return;
+    const d = snap.data();
+    if (d.device === DEVICE || d.rev === rev || saveTimer || pending) return;
+    try { await fetchRemote(d); render(); toast('Оновлено з іншого пристрою'); } catch (e) {}
+  }, () => {});
+}
+
+let saveTimer = null;
+function persist() {
+  if (!loaded) return;
+  state.isDefault = false;
+  setSave('Зберігаю…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 600);
+}
+function flush() {
+  clearTimeout(saveTimer); saveTimer = null;
+  if (!CLOUD) {
+    try { localStorage.setItem(LKEY, JSON.stringify(state)); setSave('Лише в цьому браузері'); }
+    catch (e) { setSave('Не збереглося'); }
+    return;
+  }
+  if (!account) return;
+  flushCloud();
+}
+async function flushCloud() {
+  const { fs, db } = fb, u = account.uid;
+  const cur = splitState(state);
+  let known = lastSaved ? Object.keys(lastSaved.weeks) : null;
+  if (!known) { try { known = (await fs.getDocs(weeksCol())).docs.map(d => d.id); } catch (e) { known = []; } }
+  const batch = fs.writeBatch(db);
+  for (const [w, j] of Object.entries(cur.weeks)) if (!lastSaved || lastSaved.weeks[w] !== j) batch.set(fs.doc(db, 'users', u, 'weeks', w), { tasks: j });
+  for (const w of known) if (!(w in cur.weeks)) batch.delete(fs.doc(db, 'users', u, 'weeks', w));
+  rev = Date.now();
+  batch.set(mainRef(), { main: cur.main, rev, device: DEVICE, updatedAt: fs.serverTimestamp() });
+  lastSaved = cur;
+  pending++;
+  setSave(navigator.onLine === false ? 'Офлайн — збережу, щойно буде інтернет' : 'Зберігаю…');
+  batch.commit().then(() => {
+    pending--;
+    if (!pending && !saveTimer) setSave('Збережено');
+  }).catch(e => {
+    pending--;
+    lastSaved = null;
+    setSave('Не збереглося');
+    toast('Не вдалося зберегти: ' + authError(e));
+    setTimeout(persist, 5000);
+  });
+}
+function commit() { persist(); render(); }
+window.addEventListener('pagehide', () => { if (saveTimer) flush(); });
+window.addEventListener('online', () => { if (pending) setSave('Зберігаю…'); });
+
+/* ---------- auth ---------- */
+const AUTH_ERR = {
+  'auth/invalid-email': 'Пошта записана з помилкою.',
+  'auth/missing-email': 'Введи пошту.',
+  'auth/missing-password': 'Введи пароль.',
+  'auth/weak-password': 'Пароль закороткий — мінімум 6 символів.',
+  'auth/email-already-in-use': 'Акаунт з такою поштою вже є. Спробуй увійти.',
+  'auth/invalid-credential': 'Неправильна пошта або пароль.',
+  'auth/invalid-login-credentials': 'Неправильна пошта або пароль.',
+  'auth/wrong-password': 'Неправильна пошта або пароль.',
+  'auth/user-not-found': 'Неправильна пошта або пароль.',
+  'auth/user-disabled': 'Цей акаунт вимкнено.',
+  'auth/too-many-requests': 'Забагато спроб. Зачекай кілька хвилин і спробуй ще.',
+  'auth/network-request-failed': 'Немає звʼязку з сервером. Перевір інтернет.',
+  'auth/operation-not-allowed': 'Вхід через пошту не увімкнено у Firebase (Authentication → Sign-in method).',
+  'auth/configuration-not-found': 'Firebase Authentication ще не увімкнено в консолі проєкту.',
+  'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'Неправильний apiKey у config.js.',
+  'permission-denied': 'Немає доступу до бази. Перевір правила Firestore.',
+  'unavailable': 'Немає звʼязку з базою. Перевір інтернет.'
+};
+function authError(e) { return AUTH_ERR[e && e.code] || (e && e.message ? e.message.replace(/^Firebase:\s*/, '') : 'Щось пішло не так.'); }
+
+function showGate(kind) {
+  ui.gate = kind;
+  document.getElementById('app').hidden = true;
+  document.getElementById('gate').hidden = false;
+  renderGate();
+}
+function showApp() {
+  document.getElementById('gate').hidden = true;
+  document.getElementById('app').hidden = false;
+  document.getElementById('view').classList.remove('busy');
+  render();
+}
+const LOGO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z"/></svg>';
+function renderGate() {
+  const g = document.getElementById('gate');
+  const head = `<div class="gate-brand">${LOGO}<span>Зоряний шлях</span></div>`;
+  if (ui.gate === 'loading') { g.innerHTML = `<div class="gate-card">${head}<p class="sub">Завантаження…</p></div>`; return; }
+  if (ui.gate === 'error') {
+    g.innerHTML = `<div class="gate-card stack" style="gap:14px">${head}<h2>Не вдалося відкрити акаунт</h2><p class="err">${esc(ui.authErr)}</p>
+      <div class="row"><button class="btn primary" data-g="retry">Спробувати ще</button><button class="btn ghost" data-g="logout">Вийти</button></div></div>`;
+    return;
+  }
+  if (ui.gate === 'onboard') {
+    const loc = readLocal();
+    const locN = loc ? loc.tasks.length : 0;
+    g.innerHTML = `<div class="gate-card stack" style="gap:14px">${head}
+      <div><h2>Акаунт створено</h2><p class="sub">${esc(account && account.email)}. З чого почнемо?</p></div>
+      <div class="choice">
+        ${loc && (locN || loc.spheres.length) ? `<button data-g="onb-local"><b>Перенести прогрес з цього браузера</b><span>${loc.spheres.length} сфер, ${locN} завдань, ${loc.rewards.length} винагород</span></button>` : ''}
+        <button data-g="onb-example"><b>Почати з прикладу</b><span>Кілька сфер, завдань і винагород, які легко змінити під себе</span></button>
+        <button data-g="onb-empty"><b>Чистий аркуш</b><span>Додаси сфери й винагороди сам</span></button>
+        <label class="file-choice" for="onb-file"><b>Відновити з файлу</b><span>Резервна копія .json</span></label>
+        <input type="file" id="onb-file" accept="application/json,.json" hidden>
+      </div>
+      <p class="err" id="onb-err">${esc(ui.authErr)}</p>
+      <button class="link" data-g="logout">Вийти</button></div>`;
+    return;
+  }
+  const m = ui.authMode;
+  const title = m === 'login' ? 'Вхід' : m === 'register' ? 'Реєстрація' : 'Відновлення пароля';
+  g.innerHTML = `<div class="gate-card stack" style="gap:16px">${head}
+    <p class="sub" style="margin:0">Плануй тиждень, виконуй завдання, збирай зірочки й обмінюй їх на винагороди.</p>
+    ${m !== 'reset' ? `<div class="auth-tabs" role="tablist"><button class="${m === 'login' ? 'on' : ''}" data-g="mode" data-m="login" role="tab">Вхід</button><button class="${m === 'register' ? 'on' : ''}" data-g="mode" data-m="register" role="tab">Реєстрація</button></div>` : `<h2>${title}</h2>`}
+    <form class="stack" style="gap:12px" data-f="auth" novalidate>
+      <label class="field"><span class="label">Пошта</span><input type="email" id="auth-email" autocomplete="email" inputmode="email" required></label>
+      ${m !== 'reset' ? `<label class="field"><span class="label">Пароль</span><span class="pw"><input type="password" id="auth-pass" autocomplete="${m === 'login' ? 'current-password' : 'new-password'}" minlength="6" required><button type="button" class="link" data-g="showpw">показати</button></span>${m === 'register' ? '<small class="sub">Мінімум 6 символів</small>' : ''}</label>` : '<p class="sub" style="margin:0">Надішлемо лист із посиланням, де можна задати новий пароль.</p>'}
+      <p class="err" id="auth-err" role="alert">${esc(ui.authErr)}</p>
+      <p class="ok" id="auth-ok">${esc(ui.authMsg)}</p>
+      <button class="btn primary big" type="submit" id="auth-submit">${m === 'login' ? 'Увійти' : m === 'register' ? 'Створити акаунт' : 'Надіслати лист'}</button>
+    </form>
+    ${m === 'login' ? '<button class="link" data-g="mode" data-m="reset">Забув пароль?</button>' : m === 'reset' ? '<button class="link" data-g="mode" data-m="login">Повернутися до входу</button>' : ''}
+  </div>`;
+  const em = document.getElementById('auth-email');
+  if (em) { em.value = ui.lastEmail || ''; (em.value ? document.getElementById('auth-pass') || em : em).focus(); }
+}
+
+async function submitAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const passEl = document.getElementById('auth-pass');
+  const pass = passEl ? passEl.value : '';
+  ui.lastEmail = email; ui.authErr = ''; ui.authMsg = '';
+  const btn = document.getElementById('auth-submit');
+  const errEl = document.getElementById('auth-err');
+  if (!email) { errEl.textContent = 'Введи пошту.'; return; }
+  if (ui.authMode !== 'reset' && pass.length < 6) { errEl.textContent = ui.authMode === 'register' ? 'Пароль закороткий — мінімум 6 символів.' : 'Введи пароль.'; return; }
+  btn.disabled = true; btn.textContent = 'Зачекай…'; errEl.textContent = '';
+  const A = fb.auth;
+  try {
+    if (ui.authMode === 'login') await A.signInWithEmailAndPassword(fb.au, email, pass);
+    else if (ui.authMode === 'register') {
+      const cred = await A.createUserWithEmailAndPassword(fb.au, email, pass);
+      A.sendEmailVerification(cred.user).catch(() => {});
+      ui.justRegistered = true;
+    } else {
+      await A.sendPasswordResetEmail(fb.au, email);
+      ui.authMode = 'login'; ui.authMsg = 'Якщо акаунт з такою поштою існує, лист уже в дорозі. Перевір і папку «Спам».';
+      renderGate();
+    }
+  } catch (e) {
+    ui.authErr = authError(e);
+    renderGate();
+  }
+}
+
+async function chooseStart(kind, data) {
+  state = kind === 'local' ? readLocal() : kind === 'file' ? data : kind === 'example' ? exampleState() : emptyState();
+  if (kind !== 'example') state.isDefault = false;
+  lastSaved = null;
+  loaded = true;
+  flushCloud();
+  startApp();
+  if (ui.justRegistered) { ui.justRegistered = false; toast('Надіслали лист для підтвердження пошти на ' + account.email); }
+  else if (kind === 'local') toast('Прогрес перенесено в акаунт');
+}
+
+async function boot() {
+  if (!CLOUD) {
+    state = readLocal() || exampleState();
+    loaded = true;
+    showApp();
+    setSave('Лише в цьому браузері');
+    return;
+  }
+  try { await loadFirebase(); }
+  catch (e) { ui.authErr = 'Не вдалося завантажити Firebase. Перевір інтернет і онови сторінку.'; showGate('error'); return; }
+  fb.auth.onAuthStateChanged(fb.au, async user => {
+    if (unwatch) { unwatch(); unwatch = null; }
+    account = user; loaded = false; lastSaved = null; ui.authErr = '';
+    if (!user) { state = emptyState(); showGate('auth'); return; }
+    try { await openAccount(); }
+    catch (e) { ui.authErr = authError(e); showGate('error'); }
+  });
+}
+
+function readFile(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => { try { const s = JSON.parse(r.result); if (!s || !Array.isArray(s.spheres) || !Array.isArray(s.tasks)) throw 0; res(migrate(s)); } catch (e) { rej(new Error('Це не схоже на резервну копію Зоряного шляху.')); } };
+    r.onerror = () => rej(new Error('Не вдалося прочитати файл.'));
+    r.readAsText(file);
+  });
+}
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'zoryanyi-shlyakh-' + today() + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- ledger ---------- */
+function earnings() {
+  const ev = [];
+  const sph = Object.fromEntries(state.spheres.map(s => [s.id, s.name]));
+  for (const t of state.tasks) if (t.done && t.stars) ev.push({ date: t.doneAt || t.week, stars: t.stars, cat: 'tasks', label: t.text, sub: sph[t.sphere] || '' });
+  for (const [w, map] of Object.entries(state.sphereDone)) for (const [sid, date] of Object.entries(map)) ev.push({ date: typeof date === 'string' ? date : date.date, stars: typeof date === 'string' ? state.settings.sphereBonus : date.stars, cat: 'spheres', label: 'Сфера закрита: ' + (sph[sid] || 'видалена'), sub: fmtRange(w) });
+  for (const c of state.challenges) for (const d of Object.keys(c.checks)) ev.push({ date: d, stars: c.stars, cat: 'challenge', label: c.name, sub: 'день челенджу' });
+  for (const x of state.extras) ev.push({ date: x.date, stars: x.stars, cat: x.kind === 'speed' ? 'speed' : 'extra', label: x.text, sub: x.kind === 'speed' ? 'за швидкість' : 'позапланове', id: x.id });
+  return ev;
+}
+const CATS = { tasks: ['Завдання', 'var(--ink)'], spheres: ['Закриті сфери', 'var(--s4)'], challenge: ['Челенджі', 'var(--star)'], extra: ['Позапланові', 'var(--good)'], speed: ['За швидкість', 'var(--s1)'] };
+function totals() {
+  const ev = earnings();
+  const earned = ev.reduce((a, e) => a + e.stars, 0);
+  const spent = state.purchases.reduce((a, p) => a + p.cost, 0);
+  return { ev, earned, spent, balance: earned - spent };
+}
+
+/* ---------- header ---------- */
+const LEVELS = ['Новачок', 'Учень', 'Практик', 'Наполегливий', 'Майстер', 'Стратег', 'Легенда'];
+function renderHeader(T) {
+  document.getElementById('balance').textContent = T.balance;
+  const per = 50, lv = Math.floor(T.earned / per), into = T.earned % per;
+  const name = LEVELS[Math.min(lv, LEVELS.length - 1)];
+  document.getElementById('level').innerHTML = `<div><small>Рівень ${lv + 1}</small><strong>${name}</strong></div><div><div class="lvbar"><i style="width:${into / per * 100}%"></i></div><small class="num">${into}/${per}${STAR}</small></div>`;
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === ui.tab));
+  const ac = document.getElementById('acct');
+  ac.hidden = !(CLOUD && account);
+  if (account) { ac.querySelector('.av').textContent = (account.email || '?')[0].toUpperCase(); ac.querySelector('span:last-child').textContent = account.email; ac.title = account.email + ' — налаштування акаунта'; }
+}
+
+/* ---------- views ---------- */
+const sphereById = id => state.spheres.find(s => s.id === id);
+const colorOf = s => `var(--s${(s?.c ?? 0) % 8})`;
+function taskRow(t, opts = {}) {
+  const s = sphereById(t.sphere);
+  const when = t.day ? (t.day === today() ? 'сьогодні' : fmtShort(t.day)) : '';
+  return `<li class="task ${t.done ? 'done' : ''}" style="--c:${colorOf(s)}">
+    <button class="chk" data-a="task" data-id="${t.id}" aria-label="Позначити виконаним">${CHECK}</button>
+    <span class="t">${esc(t.text)}${opts.showSphere && s ? ` <span class="date">· ${esc(s.name)}</span>` : ''}</span>
+    ${opts.todayBtn && !t.done ? `<button class="btn ghost" data-a="settoday" data-id="${t.id}" style="padding:2px 6px;font-size:.78rem">на сьогодні</button>` : ''}
+    ${!opts.todayBtn && when ? `<button class="when" data-a="clearday" data-id="${t.id}" title="Прибрати день" style="border:0">${when}</button>` : ''}
+    ${!opts.todayBtn && !when && !t.done && !opts.noDay ? `<button class="icon-btn" data-a="settoday" data-id="${t.id}" title="На сьогодні" aria-label="На сьогодні" style="font-size:.8rem">☼</button>` : ''}
+    <button class="chip ${t.stars ? '' : 'zero'}" data-a="stars" data-id="${t.id}" title="Змінити кількість зірочок">${t.stars}${STAR}</button>
+    <button class="icon-btn" data-a="deltask" data-id="${t.id}" aria-label="Видалити">×</button>
+  </li>`;
+}
+
+function viewWeek() {
+  const w = ui.week, isCur = w === weekOf(today());
+  const wt = state.tasks.filter(t => t.week === w);
+  const done = state.sphereDone[w] || {};
+  const T = totals();
+  const wEarn = T.ev.filter(e => weekOf(e.date) === w).reduce((a, e) => a + e.stars, 0);
+  const closedN = state.spheres.filter(s => done[s.id]).length;
+  const bonus = state.settings.sphereBonus;
+  let h = `<div class="stack">`;
+  if (state.isDefault) h += `<div class="note">Це приклад. Відмічай виконане, а сфери, завдання й винагороди зміни під себе: тут або в «Налаштуваннях».</div>`;
+  h += `<div class="weekbar">
+    <button class="icon-btn" data-a="wk" data-d="-7" aria-label="Попередній тиждень">‹</button>
+    <div><h2>${fmtRange(w)}</h2><p class="sub">${isCur ? 'Поточний тиждень' : parse(w) < parse(weekOf(today())) ? 'Минулий тиждень' : 'Наступний тиждень'}</p></div>
+    <button class="icon-btn" data-a="wk" data-d="7" aria-label="Наступний тиждень">›</button>
+    ${isCur ? '' : '<button class="btn" data-a="wk0">До поточного</button>'}
+    <div class="kpis" style="margin-left:auto">
+      <span class="kpi">Зароблено <b>${wEarn}${STAR}</b></span>
+      <span class="kpi">Сфер закрито <b>${closedN}/${state.spheres.length}</b></span>
+      <span class="kpi">Завдань <b>${wt.filter(t => t.done).length}/${wt.length}</b></span>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn" data-a="import">${ui.importOpen ? 'Сховати' : 'Вставити план з Telegram'}</button>
+    ${!wt.length ? '<button class="btn" data-a="copyprev">Скопіювати план минулого тижня</button>' : ''}
+  </div>`;
+  if (ui.importOpen) h += `<div class="card stack" style="gap:10px">
+    <div><h3>Вставити план текстом</h3><p class="sub">Формат як у твоєму повідомленні: «1. Англ мова» — назва сфери, рядок під нею — завдання через «+». Нові сфери створяться самі.</p></div>
+    <textarea id="import-text" placeholder="1. Англ мова&#10;1 грам тема + дз сам + 10 слів&#10;&#10;2. Книги&#10;10 сторінок щодня"></textarea>
+    <div class="row"><button class="btn primary" data-a="doimport">Додати в ${fmtRange(w)}</button><span class="sub" id="import-msg"></span></div>
+  </div>`;
+  h += `<div class="grid">`;
+  for (const s of state.spheres) {
+    const list = wt.filter(t => t.sphere === s.id);
+    const dn = list.filter(t => t.done).length;
+    const closed = !!done[s.id];
+    h += `<article class="card sph" style="--c:${colorOf(s)}">
+      <header><h3>${esc(s.name)}</h3><span class="cnt">${dn}/${list.length}</span></header>
+      <div class="mini-prog"><i style="width:${list.length ? dn / list.length * 100 : 0}%"></i></div>
+      <ul class="tasks">${list.map(t => taskRow(t, { noDay: !isCur })).join('') || '<li class="empty">Завдань на цей тиждень ще немає</li>'}</ul>
+      <form class="addf" data-f="addtask" data-s="${s.id}">
+        <input type="text" id="add-${s.id}" placeholder="Нове завдання" aria-label="Нове завдання для ${esc(s.name)}">
+        <input type="number" id="st-${s.id}" value="1" min="0" max="99" aria-label="Зірочки">
+        <button class="btn" type="submit">+</button>
+      </form>
+      <button class="sph-close ${closed ? 'on' : ''}" data-a="sph" data-id="${s.id}">${closed ? `Сферу закрито · +${bonus}${STAR}` : `Закрити сферу за тиждень · +${bonus}${STAR}`}</button>
+    </article>`;
+  }
+  h += `</div></div>`;
+  return h;
+}
+
+function viewToday() {
+  const d = today(), w = weekOf(d), dt = parse(d);
+  const T = totals();
+  const tdEarn = T.ev.filter(e => e.date === d).reduce((a, e) => a + e.stars, 0);
+  const forToday = state.tasks.filter(t => t.day === d);
+  const rest = state.tasks.filter(t => t.week === w && !t.day && !t.done);
+  const active = state.challenges.filter(c => d >= c.start && d <= addDays(c.start, c.days - 1));
+  const exToday = state.extras.filter(x => x.date === d);
+  const opts = state.spheres.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  return `<div class="stack">
+    <div class="weekbar"><div><h2>${DOW[dt.getDay()][0].toUpperCase() + DOW[dt.getDay()].slice(1)}, ${dt.getDate()} ${MON_G[dt.getMonth()]}</h2><p class="sub">Що робиш сьогодні — і скільки за це отримаєш</p></div>
+      <div class="kpis" style="margin-left:auto"><span class="kpi">Сьогодні зароблено <b>${tdEarn}${STAR}</b></span><span class="kpi">Виконано <b>${forToday.filter(t => t.done).length}/${forToday.length}</b></span></div></div>
+    <div class="grid">
+      <section class="card">
+        <h3>План на сьогодні</h3>
+        <ul class="tasks" style="margin-top:8px">${forToday.map(t => taskRow(t, { showSphere: true })).join('') || '<li class="empty">Додай завдання нижче або перенеси з плану тижня</li>'}</ul>
+        <form class="addf" data-f="addtoday" style="flex-wrap:wrap">
+          <input type="text" id="today-text" placeholder="Що зробити сьогодні" aria-label="Завдання на сьогодні" style="flex:1 1 160px">
+          <select id="today-sphere" aria-label="Сфера">${opts}</select>
+          <input type="number" id="today-stars" value="1" min="0" max="99" aria-label="Зірочки">
+          <button class="btn primary" type="submit">Додати</button>
+        </form>
+      </section>
+      <section class="card">
+        <h3>З плану тижня</h3><p class="sub">Ще не виконано і не прив'язано до дня</p>
+        <ul class="tasks" style="margin-top:8px">${rest.map(t => taskRow(t, { showSphere: true, todayBtn: true })).join('') || '<li class="empty">Все розподілено</li>'}</ul>
+      </section>
+      <section class="card">
+        <h3>Челенджі</h3><p class="sub">Відміть день — отримай зірочки</p>
+        <div class="stack" style="gap:8px;margin-top:10px">${active.map(c => {
+          const on = !!c.checks[d];
+          return `<div class="row"><button class="chk ${on ? 'on' : ''}" style="--c:var(--star)" data-a="chday" data-id="${c.id}" data-d="${d}" aria-label="Відмітити">${CHECK}</button><span style="flex:1;min-width:0">${esc(c.name)}</span><span class="chip">+${c.stars}${STAR}</span></div>`;
+        }).join('') || '<p class="empty">Немає активних челенджів</p>'}</div>
+      </section>
+      <section class="card">
+        <h3>Позапланове</h3><p class="sub">Зробив щось понад план — запиши й забери зірочки</p>
+        <form class="addf" data-f="addextra" style="flex-wrap:wrap">
+          <input type="text" id="extra-text" placeholder="Що зробив" aria-label="Що зробив" style="flex:1 1 160px">
+          <select id="extra-kind" aria-label="Тип"><option value="extra">Додаткове</option><option value="speed">За швидкість</option></select>
+          <input type="number" id="extra-stars" value="2" min="1" max="99" aria-label="Зірочки">
+          <button class="btn star" type="submit">Отримати</button>
+        </form>
+        <ul class="hist" style="margin-top:8px">${exToday.map(x => `<li><span class="t">${esc(x.text)}</span><span class="plus">+${x.stars}${STAR}</span><button class="icon-btn" data-a="delextra" data-id="${x.id}" aria-label="Скасувати">×</button></li>`).join('')}</ul>
+      </section>
+    </div></div>`;
+}
+
+function viewChallenges() {
+  const d = today();
+  return `<div class="stack">
+    <div><h2>Челенджі</h2><p class="sub">Береш звичку на певну кількість днів і отримуєш зірочки за кожен відмічений день</p></div>
+    <form class="card row" data-f="addch">
+      <input type="text" id="ch-name" placeholder="Назва челенджу" aria-label="Назва" style="flex:1 1 200px">
+      <label class="row" style="gap:6px"><span class="sub">старт</span><input type="date" id="ch-start" value="${d}"></label>
+      <label class="row" style="gap:6px"><span class="sub">днів</span><input type="number" id="ch-days" value="30" min="1" max="366"></label>
+      <label class="row" style="gap:6px"><span class="sub">${STAR}/день</span><input type="number" id="ch-stars" value="1" min="1" max="20"></label>
+      <button class="btn primary" type="submit">Почати челендж</button>
+    </form>
+    <div class="grid">${state.challenges.map(c => {
+      const end = addDays(c.start, c.days - 1), n = Object.keys(c.checks).length;
+      const status = d < c.start ? 'ще не почався' : d > end ? 'завершено' : 'триває';
+      let cells = '';
+      for (let i = 0; i < c.days; i++) {
+        const day = addDays(c.start, i);
+        cells += `<button class="day ${c.checks[day] ? 'on' : ''} ${day === d ? 'today' : ''}" data-a="chday" data-id="${c.id}" data-d="${day}" ${day > d ? 'disabled' : ''} title="${fmtShort(day)}">${parse(day).getDate()}</button>`;
+      }
+      const armed = ui.armed[c.id];
+      return `<article class="card">
+        <div class="row" style="align-items:flex-start"><div style="flex:1;min-width:0"><h3>${esc(c.name)}</h3><p class="sub">${fmtShort(c.start)} – ${fmtShort(end)} · ${status}</p></div>
+        <button class="btn ghost ${armed ? 'danger' : ''}" data-a="delch" data-id="${c.id}">${armed ? 'Точно видалити?' : 'Видалити'}</button></div>
+        <div class="row" style="margin-top:10px;justify-content:space-between"><span class="num">${n}/${c.days} днів</span><span class="chip">${n * c.stars}${STAR} зароблено</span></div>
+        <div class="bar" style="margin-top:6px"><i style="width:${n / c.days * 100}%"></i></div>
+        <div class="days">${cells}</div>
+      </article>`;
+    }).join('') || '<p class="empty">Ще немає челенджів</p>'}</div></div>`;
+}
+
+function viewRewards() {
+  const T = totals();
+  const list = [...state.rewards].sort((a, b) => a.cost - b.cost);
+  const hist = [...state.purchases].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+  return `<div class="stack">
+    <div class="weekbar"><div><h2>Винагороди</h2><p class="sub">Спочатку визнач ціну в зірочках, потім заробляй і забирай</p></div>
+      <div class="kpis" style="margin-left:auto"><span class="kpi">Зароблено всього <b>${T.earned}${STAR}</b></span><span class="kpi">Витрачено <b>${T.spent}${STAR}</b></span></div></div>
+    <form class="card row" data-f="addrw">
+      <input type="text" id="rw-name" placeholder="Винагорода" aria-label="Назва винагороди" style="flex:1 1 200px">
+      <label class="row" style="gap:6px"><span class="sub">ціна</span><input type="number" id="rw-cost" value="25" min="1" max="9999"></label>
+      <select id="rw-pri" aria-label="Пріоритет"><option value="">Пріоритет</option><option value="High">Високий</option><option value="Medium">Середній</option><option value="Low">Низький</option></select>
+      <select id="rw-eff" aria-label="Зусилля"><option value="">Зусилля</option><option value="Large">Великі</option><option value="Medium">Середні</option><option value="Small">Малі</option></select>
+      <button class="btn primary" type="submit">Додати</button>
+    </form>
+    <div class="grid">${list.map(r => {
+      const ready = T.balance >= r.cost, armed = ui.armed[r.id], armedDel = ui.armed['d' + r.id];
+      return `<article class="card reward ${ready ? 'ready' : ''}">
+        <div class="top-r"><h3>${esc(r.name)}</h3><span class="price">${r.cost}${STAR}</span></div>
+        <div class="tags">${r.pri ? `<span class="tag ${r.pri}">${PRI[r.pri]}</span>` : ''}${r.eff ? `<span class="tag">${EFF[r.eff]}</span>` : ''}</div>
+        <div><div class="bar"><i style="width:${Math.min(100, Math.max(0, T.balance) / r.cost * 100)}%"></i></div>
+        <p class="sub" style="font-size:.8rem;margin-top:4px">${ready ? 'Можна забирати' : `Ще ${r.cost - Math.max(0, T.balance)}${STAR}`}</p></div>
+        <div class="row">
+          <button class="btn ${armed ? 'star' : 'primary'}" data-a="buy" data-id="${r.id}" ${ready ? '' : 'disabled'}>${armed ? `Підтвердити −${r.cost}${STAR}` : 'Отримати'}</button>
+          <button class="btn ghost ${armedDel ? 'danger' : ''}" data-a="delrw" data-id="${r.id}" style="margin-left:auto">${armedDel ? 'Точно?' : 'Видалити'}</button>
+        </div>
+      </article>`;
+    }).join('') || '<p class="empty">Додай першу винагороду</p>'}</div>
+    <section class="card"><h3>Історія покупок</h3>
+      <ul class="hist" style="margin-top:6px">${hist.map(p => `<li><span class="date">${fmtShort(p.date)}</span><span class="t">${esc(p.name)}</span><span class="minus">−${p.cost}${STAR}</span><button class="icon-btn" data-a="delbuy" data-id="${p.id}" title="Скасувати покупку" aria-label="Скасувати">↺</button></li>`).join('') || '<li class="empty">Поки нічого не куплено</li>'}</ul>
+    </section></div>`;
+}
+
+function viewStats() {
+  const T = totals();
+  const cur = monthKey(today());
+  const months = [];
+  { let [y, m] = cur.split('-').map(Number); for (let i = 0; i < 6; i++) { months.unshift(y + '-' + z(m)); m--; if (!m) { m = 12; y--; } } }
+  const cats = Object.keys(CATS);
+  const inc = Object.fromEntries(months.map(k => [k, Object.fromEntries(cats.map(c => [c, 0]))]));
+  for (const e of T.ev) { const k = monthKey(e.date); if (inc[k]) inc[k][e.cat] += e.stars; }
+  const sp = Object.fromEntries(months.map(k => [k, 0]));
+  for (const p of state.purchases) { const k = monthKey(p.date); if (k in sp) sp[k] += p.cost; }
+
+  // chart
+  const W = 640, H = 260, L = 40, R = 12, Tp = 14, B = 30, iw = W - L - R, ih = H - Tp - B;
+  const maxV = Math.max(10, ...months.map(k => Math.max(cats.reduce((a, c) => a + inc[k][c], 0), sp[k])));
+  const step = Math.pow(10, Math.floor(Math.log10(maxV))) * (maxV / Math.pow(10, Math.floor(Math.log10(maxV))) > 5 ? 2 : 1);
+  const top = Math.ceil(maxV / step) * step;
+  const y = v => Tp + ih - v / top * ih;
+  const gw = iw / months.length, bw = Math.min(26, gw * .32);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Зароблено і витрачено по місяцях">`;
+  for (let v = 0; v <= top; v += step) svg += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="JetBrains Mono, monospace">${v}</text>`;
+  months.forEach((k, i) => {
+    const cx = L + gw * i + gw / 2;
+    let acc = 0;
+    for (const c of cats) { const v = inc[k][c]; if (!v) continue; svg += `<rect x="${cx - bw - 2}" y="${y(acc + v)}" width="${bw}" height="${y(acc) - y(acc + v)}" fill="${CATS[c][1]}" rx="2"><title>${CATS[c][0]}: ${v}</title></rect>`; acc += v; }
+    if (sp[k]) svg += `<rect x="${cx + 2}" y="${y(sp[k])}" width="${bw}" height="${y(0) - y(sp[k])}" fill="var(--bad)" opacity=".75" rx="2"><title>Витрачено: ${sp[k]}</title></rect>`;
+    svg += `<text x="${cx}" y="${H - 10}" text-anchor="middle" font-size="12" fill="${k === cur ? 'var(--fg)' : 'var(--muted)'}" font-weight="${k === cur ? 700 : 400}">${monthName(k)}</text>`;
+  });
+  svg += `</svg>`;
+
+  // this month breakdown
+  const mInc = cats.map(c => [c, inc[cur][c]]).filter(x => x[1]);
+  const mIncMax = Math.max(1, ...mInc.map(x => x[1]));
+  const spBy = {};
+  for (const p of state.purchases) if (monthKey(p.date) === cur) spBy[p.name] = (spBy[p.name] || 0) + p.cost;
+  const spList = Object.entries(spBy).sort((a, b) => b[1] - a[1]);
+  const spMax = Math.max(1, ...spList.map(x => x[1]));
+  const recent = [...T.ev].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
+
+  return `<div class="stack">
+    <div><h2>Статистика</h2><p class="sub">Звідки приходять зірочки і на що вони йдуть</p></div>
+    <section class="card"><h3>Останні 6 місяців</h3>
+      <div class="chart-wrap" style="margin-top:10px">${svg}</div>
+      <div class="legend">${cats.map(c => `<span><i style="background:${CATS[c][1]}"></i>${CATS[c][0]}</span>`).join('')}<span><i style="background:var(--bad);opacity:.75"></i>Витрачено</span></div>
+    </section>
+    <div class="grid">
+      <section class="card"><h3>Дохід за ${MON_N[parse(cur + '-01').getMonth()]}</h3>
+        <div class="hbars" style="margin-top:12px">${mInc.map(([c, v]) => `<div class="hb"><span>${CATS[c][0]}</span><span class="plus">+${v}${STAR}</span><div class="bar"><i style="width:${v / mIncMax * 100}%;background:${CATS[c][1]}"></i></div></div>`).join('') || '<p class="empty">Цього місяця ще нічого не зароблено</p>'}</div>
+      </section>
+      <section class="card"><h3>Витрати цього місяця</h3>
+        <div class="hbars" style="margin-top:12px">${spList.map(([n, v]) => `<div class="hb"><span>${esc(n)}</span><span class="minus">−${v}${STAR}</span><div class="bar"><i style="width:${v / spMax * 100}%;background:var(--bad)"></i></div></div>`).join('') || '<p class="empty">Цього місяця ще нічого не витрачено</p>'}</div>
+      </section>
+    </div>
+    <section class="card"><h3>По категоріях і місяцях</h3>
+      <div class="tbl-wrap" style="margin-top:8px"><table>
+        <thead><tr><th>Категорія</th>${months.map(k => `<th>${monthName(k)}</th>`).join('')}</tr></thead>
+        <tbody>${cats.map(c => `<tr><td>${CATS[c][0]}</td>${months.map(k => `<td class="num">${inc[k][c] || '·'}</td>`).join('')}</tr>`).join('')}
+        <tr><td>Витрачено</td>${months.map(k => `<td class="num minus">${sp[k] ? '−' + sp[k] : '·'}</td>`).join('')}</tr></tbody>
+        <tfoot><tr><td>Баланс за місяць</td>${months.map(k => { const v = cats.reduce((a, c) => a + inc[k][c], 0) - sp[k]; return `<td class="num">${v}</td>`; }).join('')}</tr></tfoot>
+      </table></div>
+    </section>
+    <section class="card"><h3>Останні надходження</h3>
+      <ul class="hist" style="margin-top:6px">${recent.map(e => `<li><span class="date">${fmtShort(e.date)}</span><span class="t">${esc(e.label)} <span class="date">· ${esc(e.sub)}</span></span><span class="plus">+${e.stars}${STAR}</span></li>`).join('') || '<li class="empty">Поки порожньо</li>'}</ul>
+    </section>
+  </div>`;
+}
+
+function viewSettings() {
+  const pi = ui.pendingImport;
+  const acct = CLOUD && account ? `<section class="card stack" style="gap:12px">
+      <h3>Акаунт</h3>
+      <div class="row"><span class="av big-av">${esc((account.email || '?')[0].toUpperCase())}</span><div style="min-width:0;flex:1"><b style="overflow-wrap:anywhere">${esc(account.email)}</b>
+        <p class="sub" style="margin:0">${account.emailVerified ? 'Пошту підтверджено' : 'Пошту не підтверджено'} · прогрес зберігається в акаунті й однаковий на всіх пристроях</p></div></div>
+      <div class="row">
+        ${account.emailVerified ? '' : '<button class="btn" data-a="verify">Надіслати лист підтвердження ще раз</button>'}
+        <button class="btn" data-a="pwreset">Змінити пароль</button>
+        <button class="btn danger" data-a="logout">Вийти</button>
+      </div>
+    </section>` : `<section class="card stack" style="gap:8px">
+      <h3>Акаунт</h3>
+      <p class="sub" style="margin:0">Вхід через пошту ще не налаштовано, тому прогрес живе лише в цьому браузері. Щоб увімкнути акаунти, заповни файл config.js за інструкцією з README.</p>
+    </section>`;
+  return `<div class="stack">
+    <div><h2>Налаштування</h2><p class="sub">Акаунт, сфери, правила гри та резервні копії</p></div>
+    ${acct}
+    <section class="card">
+      <h3>Сфери</h3><p class="sub">Напрями, над якими ти працюєш. Кожна сфера — окрема картка в тижневому плані.</p>
+      ${state.spheres.map(s => {
+        const armed = ui.armed[s.id];
+        return `<div class="srow">
+          <input type="text" id="sname-${s.id}" value="${esc(s.name)}" data-c="rename" data-id="${s.id}" aria-label="Назва сфери">
+          <div class="sw">${[0,1,2,3,4,5,6,7].map(i => `<button class="${s.c === i ? 'on' : ''}" style="background:var(--s${i})" data-a="color" data-id="${s.id}" data-c="${i}" aria-label="Колір ${i + 1}"></button>`).join('')}</div>
+          <button class="icon-btn" data-a="mv" data-id="${s.id}" data-d="-1" aria-label="Вище">↑</button>
+          <button class="icon-btn" data-a="mv" data-id="${s.id}" data-d="1" aria-label="Нижче">↓</button>
+          <button class="btn ghost ${armed ? 'danger' : ''}" data-a="delsph" data-id="${s.id}">${armed ? 'Видалити з завданнями?' : 'Видалити'}</button>
+        </div>`;
+      }).join('') || '<p class="empty">Сфер немає</p>'}
+      <form class="addf" data-f="addsph"><input type="text" id="new-sph" placeholder="Нова сфера, напр. Математика" aria-label="Нова сфера"><button class="btn primary" type="submit">Додати сферу</button></form>
+    </section>
+    <section class="card stack" style="gap:12px">
+      <h3>Правила гри</h3>
+      <label class="row"><span style="flex:1;min-width:0">Зірочок за закриту сферу за тиждень</span><input type="number" id="bonus" value="${state.settings.sphereBonus}" min="0" max="50" data-c="bonus"></label>
+      <p class="sub">Кожне завдання має власну ціну — натисни на зірочку біля завдання, щоб змінити її. Рівень росте кожні 50 зароблених зірочок.</p>
+    </section>
+    <section class="card stack" style="gap:12px">
+      <h3>Резервна копія</h3>
+      <p class="sub" style="margin:0">Файл з усіма сферами, завданнями, челенджами, винагородами та історією. Через нього можна перенести прогрес або відновити його.</p>
+      ${pi ? `<div class="note">Замінити поточні дані копією з файлу? Там ${pi.spheres.length} сфер, ${pi.tasks.length} завдань, ${pi.rewards.length} винагород.
+          <span class="row" style="margin-left:auto"><button class="btn primary" data-a="imp-yes">Замінити</button><button class="btn" data-a="imp-no">Скасувати</button></span></div>` : ''}
+      <div class="row">
+        <button class="btn" data-a="export">Завантажити копію</button>
+        <label class="btn" for="import-file">Відновити з файлу</label>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+      </div>
+    </section>
+    <section class="card stack" style="gap:10px">
+      <h3>Почати з нуля</h3>
+      <p class="sub" style="margin:0">Видалить усі сфери, завдання, челенджі, винагороди та історію. Повернути не вийде, тож спершу завантаж копію.</p>
+      <div class="row"><button class="btn ${ui.armed.reset ? 'danger' : ''}" data-a="reset">${ui.armed.reset ? 'Так, стерти все' : 'Очистити все'}</button>
+      <button class="btn ghost" data-a="restore">Завантажити приклад</button></div>
+    </section>
+  </div>`;
+}
+
+const VIEWS = { week: viewWeek, today: viewToday, challenges: viewChallenges, rewards: viewRewards, stats: viewStats, settings: viewSettings };
+function render(focusId) {
+  const T = totals();
+  renderHeader(T);
+  const v = document.getElementById('view');
+  v.innerHTML = (VIEWS[ui.tab] || viewWeek)();
+  if (focusId) { const el = document.getElementById(focusId); if (el) el.focus(); }
+}
+
+/* ---------- feedback ---------- */
+function burst(ev, n) {
+  if (!ev || n <= 0) return;
+  const r = ev.target.getBoundingClientRect();
+  const b = document.createElement('span');
+  b.className = 'burst'; b.textContent = '+' + n + STAR;
+  b.style.left = (r.left + r.width / 2 - 18) + 'px'; b.style.top = (r.top - 6) + 'px';
+  document.body.appendChild(b); setTimeout(() => b.remove(), 1000);
+}
+function arm(key) {
+  if (ui.armed[key]) { delete ui.armed[key]; return true; }
+  ui.armed = { [key]: true };
+  setTimeout(() => { if (ui.armed[key]) { delete ui.armed[key]; render(); } }, 4000);
+  render(); return false;
+}
+
+/* ---------- import parser ---------- */
+function parsePlan(text) {
+  const out = []; let cur = null;
+  for (let raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) { continue; }
+    const head = line.match(/^\d+[.)]\s*(.+?)\s*\+?\s*$/) || line.match(/^(.+?):\s*$/);
+    if (head) { cur = { name: head[1].trim(), tasks: [] }; out.push(cur); continue; }
+    if (!cur) continue; // e.g. "07-14 вересень" before first sphere
+    line.split(/\s\+\s|\s\+$/).map(s => s.trim()).filter(Boolean).forEach(t => cur.tasks.push(t));
+  }
+  return out.filter(b => b.tasks.length || b.name);
+}
+const norm = s => s.toLowerCase().replace(/[^a-zа-яіїєґ0-9]/gi, '');
+function findSphere(name) {
+  const n = norm(name);
+  return state.spheres.find(s => norm(s.name) === n) || state.spheres.find(s => { const m = norm(s.name); return m.startsWith(n.slice(0, 4)) || n.startsWith(m.slice(0, 4)); });
+}
+
+/* ---------- events ---------- */
+document.getElementById('tabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-tab]'); if (!b) return;
+  ui.tab = b.dataset.tab; ui.armed = {};
+  try { localStorage.setItem(LKEY + ':tab', ui.tab); } catch (er) {}
+  render(); window.scrollTo({ top: 0 });
+});
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-a]'); if (!b || !loaded) return;
+  const id = b.dataset.id, a = b.dataset.a;
+  const task = id && state.tasks.find(t => t.id === id);
+  switch (a) {
+    case 'task': {
+      task.done = !task.done; task.doneAt = task.done ? today() : null;
+      if (task.done) burst(e, task.stars);
+      return commit();
+    }
+    case 'stars': { const seq = [0, 1, 2, 3, 5, 10]; const i = seq.indexOf(task.stars); task.stars = seq[(i + 1) % seq.length]; return commit(); }
+    case 'deltask': state.tasks = state.tasks.filter(t => t.id !== id); return commit();
+    case 'settoday': task.day = today(); return commit();
+    case 'clearday': task.day = null; return commit();
+    case 'wk': ui.week = addDays(ui.week, +b.dataset.d); return render();
+    case 'wk0': ui.week = weekOf(today()); return render();
+    case 'import': ui.importOpen = !ui.importOpen; render(ui.importOpen ? 'import-text' : null); return;
+    case 'doimport': {
+      const blocks = parsePlan(document.getElementById('import-text').value);
+      let n = 0, ns = 0;
+      for (const bl of blocks) {
+        let s = findSphere(bl.name);
+        if (!s) { s = { id: uid(), name: bl.name.replace(/^./, c => c.toUpperCase()), c: state.spheres.length % 8 }; state.spheres.push(s); ns++; }
+        for (const t of bl.tasks) { state.tasks.push({ id: uid(), week: ui.week, sphere: s.id, text: t, stars: 1, day: null, done: false, doneAt: null }); n++; }
+      }
+      if (!n) { document.getElementById('import-msg').textContent = 'Не знайшов жодного завдання. Перевір, що назви сфер пронумеровані: «1. Книги».'; return; }
+      ui.importOpen = false; commit();
+      return;
+    }
+    case 'copyprev': {
+      const prev = addDays(ui.week, -7);
+      const src = state.tasks.filter(t => t.week === prev);
+      src.forEach(t => state.tasks.push({ ...t, id: uid(), week: ui.week, day: null, done: false, doneAt: null }));
+      return commit();
+    }
+    case 'sph': {
+      const w = ui.week; state.sphereDone[w] = state.sphereDone[w] || {};
+      if (state.sphereDone[w][id]) delete state.sphereDone[w][id];
+      else { state.sphereDone[w][id] = { date: w === weekOf(today()) ? today() : addDays(w, 6), stars: state.settings.sphereBonus }; burst(e, state.settings.sphereBonus); }
+      return commit();
+    }
+    case 'chday': {
+      const c = state.challenges.find(x => x.id === id), d = b.dataset.d;
+      if (c.checks[d]) delete c.checks[d]; else { c.checks[d] = true; burst(e, c.stars); }
+      return commit();
+    }
+    case 'delch': if (arm(id)) { state.challenges = state.challenges.filter(c => c.id !== id); commit(); } return;
+    case 'delextra': state.extras = state.extras.filter(x => x.id !== id); return commit();
+    case 'buy': {
+      const r = state.rewards.find(x => x.id === id);
+      if (totals().balance < r.cost) return;
+      if (arm(id)) { state.purchases.push({ id: uid(), rewardId: r.id, name: r.name, cost: r.cost, date: today() }); commit(); }
+      return;
+    }
+    case 'delrw': if (arm('d' + id)) { state.rewards = state.rewards.filter(r => r.id !== id); commit(); } return;
+    case 'delbuy': state.purchases = state.purchases.filter(p => p.id !== id); return commit();
+    case 'color': { const s = sphereById(id); s.c = +b.dataset.c; return commit(); }
+    case 'mv': {
+      const i = state.spheres.findIndex(s => s.id === id), j = i + +b.dataset.d;
+      if (j < 0 || j >= state.spheres.length) return;
+      [state.spheres[i], state.spheres[j]] = [state.spheres[j], state.spheres[i]]; return commit();
+    }
+    case 'delsph': if (arm(id)) { state.spheres = state.spheres.filter(s => s.id !== id); state.tasks = state.tasks.filter(t => t.sphere !== id); commit(); } return;
+    case 'reset': if (arm('reset')) { state = emptyState(); commit(); } return;
+    case 'restore': state = exampleState(); state.isDefault = false; commit(); return;
+  }
+});
+
+document.addEventListener('submit', e => {
+  const f = e.target.closest('[data-f]'); if (!f) return;
+  e.preventDefault(); if (!loaded) return;
+  const val = id => document.getElementById(id).value.trim();
+  const num = (id, d) => { const n = parseInt(document.getElementById(id).value, 10); return isNaN(n) ? d : Math.max(0, n); };
+  switch (f.dataset.f) {
+    case 'addtask': {
+      const s = f.dataset.s, text = val('add-' + s); if (!text) return;
+      state.tasks.push({ id: uid(), week: ui.week, sphere: s, text, stars: num('st-' + s, 1), day: null, done: false, doneAt: null });
+      persist(); render('add-' + s); return;
+    }
+    case 'addtoday': {
+      const text = val('today-text'), s = document.getElementById('today-sphere').value; if (!text || !s) return;
+      state.tasks.push({ id: uid(), week: weekOf(today()), sphere: s, text, stars: num('today-stars', 1), day: today(), done: false, doneAt: null });
+      persist(); render('today-text');
+      const sel = document.getElementById('today-sphere'); if (sel) sel.value = s; return;
+    }
+    case 'addextra': {
+      const text = val('extra-text'); if (!text) return;
+      const n = Math.max(1, num('extra-stars', 1));
+      state.extras.push({ id: uid(), text, stars: n, kind: document.getElementById('extra-kind').value, date: today() });
+      const btn = f.querySelector('button'); persist(); burst({ target: btn }, n); render('extra-text'); return;
+    }
+    case 'addch': {
+      const name = val('ch-name'); if (!name) return;
+      state.challenges.push({ id: uid(), name, start: document.getElementById('ch-start').value || today(), days: Math.max(1, num('ch-days', 30)), stars: Math.max(1, num('ch-stars', 1)), checks: {} });
+      return commit();
+    }
+    case 'addrw': {
+      const name = val('rw-name'); if (!name) return;
+      state.rewards.push({ id: uid(), name, cost: Math.max(1, num('rw-cost', 25)), pri: document.getElementById('rw-pri').value, eff: document.getElementById('rw-eff').value });
+      return commit();
+    }
+    case 'addsph': {
+      const name = val('new-sph'); if (!name) return;
+      state.spheres.push({ id: uid(), name, c: state.spheres.length % 8 });
+      persist(); render('new-sph'); return;
+    }
+  }
+});
+
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-c]'); if (!el || !loaded || el.tagName === 'BUTTON') return;
+  if (el.dataset.c === 'rename') { const s = sphereById(el.dataset.id); const v = el.value.trim(); if (s && v) { s.name = v; commit(); } }
+  if (el.dataset.c === 'bonus') { state.settings.sphereBonus = Math.max(0, parseInt(el.value, 10) || 0); commit(); }
+});
+
+/* ---------- gate & account events ---------- */
+document.addEventListener('click', async e => {
+  const g = e.target.closest('[data-g]');
+  if (g) {
+    const k = g.dataset.g;
+    if (k === 'mode') { ui.authMode = g.dataset.m; ui.authErr = ''; ui.authMsg = ''; const em = document.getElementById('auth-email'); if (em) ui.lastEmail = em.value.trim(); renderGate(); }
+    else if (k === 'showpw') { const p = document.getElementById('auth-pass'); p.type = p.type === 'password' ? 'text' : 'password'; g.textContent = p.type === 'password' ? 'показати' : 'сховати'; }
+    else if (k === 'logout') { fb && fb.auth.signOut(fb.au); }
+    else if (k === 'retry') { ui.authErr = ''; try { await openAccount(); } catch (er) { ui.authErr = authError(er); showGate('error'); } }
+    else if (k === 'onb-local') chooseStart('local');
+    else if (k === 'onb-example') chooseStart('example');
+    else if (k === 'onb-empty') chooseStart('empty');
+    return;
+  }
+  const b = e.target.closest('[data-a]');
+  if (!b || !loaded) return;
+  const a = b.dataset.a;
+  if (a === 'logout') { if (saveTimer) flush(); ui.tab = 'week'; await fb.auth.signOut(fb.au); return; }
+  if (a === 'verify') { try { await fb.auth.sendEmailVerification(account); toast('Лист надіслано на ' + account.email); } catch (er) { toast(authError(er)); } return; }
+  if (a === 'pwreset') { try { await fb.auth.sendPasswordResetEmail(fb.au, account.email); toast('Посилання для зміни пароля надіслано на ' + account.email); } catch (er) { toast(authError(er)); } return; }
+  if (a === 'export') { exportBackup(); return; }
+  if (a === 'imp-yes') { state = ui.pendingImport; state.isDefault = false; ui.pendingImport = null; commit(); toast('Дані відновлено з файлу'); return; }
+  if (a === 'imp-no') { ui.pendingImport = null; render(); return; }
+  if (a === 'acct') { ui.tab = 'settings'; try { localStorage.setItem(LKEY + ':tab', ui.tab); } catch (er) {} render(); window.scrollTo({ top: 0 }); return; }
+});
+document.addEventListener('change', async e => {
+  if (e.target.id === 'onb-file' || e.target.id === 'import-file') {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      const s = await readFile(f);
+      if (e.target.id === 'onb-file') chooseStart('file', s);
+      else { ui.pendingImport = s; render(); }
+    } catch (er) {
+      if (e.target.id === 'onb-file') { const el = document.getElementById('onb-err'); if (el) el.textContent = er.message; }
+      else toast(er.message);
+    }
+    e.target.value = '';
+  }
+});
+document.addEventListener('submit', e => {
+  if (e.target.dataset.f === 'auth') { e.preventDefault(); submitAuth(); }
+});
+
+boot();
+</script>
+</body>
+</html>
